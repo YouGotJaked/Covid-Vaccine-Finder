@@ -132,3 +132,6 @@ dmypy.json
 *.csv
 data/json/email.json
 data/json/questionnaire.json
+
+# macOS
+*.DS_STORE
