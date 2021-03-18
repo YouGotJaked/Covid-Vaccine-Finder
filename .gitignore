@@ -134,4 +134,4 @@ data/json/email.json
 data/json/questionnaire.json
 
 # macOS
-*.DS_STORE
+*.DS_Store
