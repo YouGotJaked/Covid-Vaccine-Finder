@@ -35,7 +35,7 @@ def main():
     
     # set up webdriver
     options = webdriver.FirefoxOptions()
-    #options.headless = True
+    options.headless = True
     """
     driver = webdriver.Firefox(options=options,
                                service_log_path=logging_webdriver_path)
