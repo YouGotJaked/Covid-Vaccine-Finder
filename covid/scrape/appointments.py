@@ -30,7 +30,7 @@ class AppointmentScraper:
             logging.warning(err)
             self.tz_info = {}
 
-   @property
+    @property
     def state_element(self):
         return self._state_element
 
@@ -40,9 +40,9 @@ class AppointmentScraper:
         self.driver.get(APPOINTMENT_URL)     
         try:
             state_link = WebDriverWait(self.driver, TIMEOUT).until(
-                    EC.presence_of_element_located(
-                        (By.CSS_SELECTOR, "a[data-analytics-name={}]" \
-                                          .format(state))))
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR,
+                     "a[data-analytics-name={}]".format(state))))
             logging.debug('Found state: %s', state_link.text)
             self._state_element = state_link
         except TimeoutException as exc:
@@ -61,7 +61,7 @@ class AppointmentScraper:
     def vaccine_info(self, element_id):
         try:
             popup_window = WebDriverWait(self.driver, TIMEOUT).until(
-                    EC.presence_of_element_located((By.ID, element_id)))
+                EC.presence_of_element_located((By.ID, element_id)))
             logging.debug('Found popup window: %s',
                           popup_window.get_attribute('id'))
             self._vaccine_info = popup_window
@@ -76,12 +76,12 @@ class AppointmentScraper:
     @city_status_table.setter
     def city_status_table(self, state):
         assert self.vaccine_info is not None
-        print("inside city_status_table setter for state '{}'".format(state))
         try:
             table_class = WebDriverWait(self.vaccine_info, TIMEOUT).until(
-                    EC.presence_of_element_located(
-                        (By.CLASS_NAME, 'covid-status.tableFixHead')))
-            logging.debug('Found table: %s', table_class.get_attribute('data-url'))
+                EC.presence_of_element_located(
+                    (By.CLASS_NAME, 'covid-status.tableFixHead')))
+            logging.debug('Found table: %s',
+                          table_class.get_attribute('data-url'))
             table = table_class.find_element_by_tag_name('table')
             self._city_status_table = table.find_element_by_tag_name('tbody')
         except TimeoutException:
@@ -93,13 +93,14 @@ class AppointmentScraper:
         assert self.vaccine_info is not None
         try:
             timestamp = WebDriverWait(self.vaccine_info, TIMEOUT).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR,
-                                                    "div[data-id='timestamp'")))
-            logging.debug('Found timestamp: %s', timestamp.get_attribute('data-id'))
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div[data-id='timestamp'")))
+            logging.debug('Found timestamp: %s',
+                          timestamp.get_attribute('data-id'))
             if not timestamp.is_displayed():
                 self.click_state_element()
                 timestamp = self.vaccine_info.find_element_by_css_selector(
-                        "div[data-id='timestamp']")
+                    "div[data-id='timestamp']")
             return timestamp
         except TimeoutException as exc:
             logging.warning(exc)

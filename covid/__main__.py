@@ -36,69 +36,56 @@ def main():
     # set up webdriver
     options = webdriver.FirefoxOptions()
     options.headless = True
+    """
     driver = webdriver.Firefox(options=options,
                                service_log_path=logging_webdriver_path)
-    logging.debug('Initialized webdriver.')
-        
-    if args.find:
-        scraper = AppointmentScraper(driver, 'California')
-        entries = scraper.get_city_status_entries()
-        
-        if not AVAILABILITY_CSV.exists():
-            logging.debug("File '{}' not found. Creating file..." \
-                          .format(AVAILABILITY_CSV))
-            AVAILABILITY_CSV.touch()
-        try:
-            df = pd.read_csv(AVAILABILITY_CSV)
-        except EmptyDataError:
-            df = pd.DataFrame()
-        finally:
-            df = df.append(entries, ignore_index=True)
-        
-        city_filter = (((df.city=='San Jose') | (df.city=='Santa Clara') |
-                        (df.city=='Campbell') | (df.city=='Los Gatos'))
-                       & (df.timestamp==scraper.timestamp))
-        if args.verbose:
-            print(df[city_filter])
-        if args.notify:
-            df_avail = df[city_filter & (df.status=='Available')]
-            if not df_avail.empty:
-                cities = (', ').join(df_avail.city.values)
-                msg = "Vaccines available in the following cities: " + cities
-                email(msg)
-                text(msg)
-            logging.debug('Appending latest vaccine availability to csv...')
-            df.to_csv(AVAILABILITY_CSV, index=False)
-        elif args.schedule:
-            scheduler = AppointmentScheduler()
-    driver.quit()
     """
-    with webdriver.Firefox(options=options) as driver:
-        ca = appointments.get_state_by_name(driver, 'California')
-        info = appointments.get_vaccine_info(driver, ca)
-        entries = appointments.get_city_status_entries(driver, info)
-        if not AVAILABILITY_CSV.exists():
-            AVAILABILITY_CSV.touch()
-        try:
-            df = pd.read_csv(AVAILABILITY_CSV)
-        except EmptyDataError:
-            df = pd.DataFrame()
-        finally:
-            df = df.append(entries, ignore_index=True)
-            city_filter = (df.city == 'San Jose') | (df.city == 'Santa Clara')
-            print(df[city_filter])
-            df.to_csv(AVAILABILITY_CSV, index=False)
-    """
-        
-    """
-    driver.get(BASE_URL)
-    fill_questionnaire(driver)
-    fill_vaccination_type(driver)
-    determine_eligibility(driver)
-    confirm_eligibility(driver)
-    start_scheduling(driver)
-    schedule_dose(driver)
-    """
+
+    with webdriver.Firefox(options=options,
+                           service_log_path=logging_webdriver_path) as driver:
+        logging.debug('Initialized webdriver.')
+        if args.find:
+            scraper = AppointmentScraper(driver, 'California')
+            timestamp = scraper.formatted_timestamp()
+            entries = scraper.city_status_entries(timestamp)
+            
+            if not AVAILABILITY_CSV.exists():
+                logging.debug("File '{}' not found. Creating file..." \
+                              .format(AVAILABILITY_CSV))
+                AVAILABILITY_CSV.touch()
+            try:
+                df = pd.read_csv(AVAILABILITY_CSV)
+            except EmptyDataError:
+                df = pd.DataFrame()
+            finally:
+                df = df.append(entries, ignore_index=True)
+            
+            city_filter = (((df.city=='San Jose') | (df.city=='Santa Clara') |
+                            (df.city=='Campbell') | (df.city=='Los Gatos'))
+                           & (df.timestamp==timestamp))
+            if args.verbose:
+                print(df[city_filter])
+            if args.notify:
+                df_avail = df[city_filter & (df.status=='Available')]
+                if not df_avail.empty:
+                    cities = (', ').join(df_avail.city.values)
+                    msg = "Vaccines available in the following cities: " + cities
+                    email(msg)
+                    text(msg)
+                logging.debug('Appending latest vaccine availability to csv...')
+                df.to_csv(AVAILABILITY_CSV, index=False)
+            elif args.schedule:
+                scheduler = AppointmentScheduler()
+                """
+                driver.get(BASE_URL)
+                fill_questionnaire(driver)
+                fill_vaccination_type(driver)
+                determine_eligibility(driver)
+                confirm_eligibility(driver)
+                start_scheduling(driver)
+                schedule_dose(driver)
+                """
+    #driver.quit()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Find and/or schedule a ' \
