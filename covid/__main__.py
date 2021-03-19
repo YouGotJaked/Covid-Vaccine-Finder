@@ -1,4 +1,8 @@
+import sys
 import argparse
+import configparser
+import logging
+import logging.config
 from pathlib import Path
 
 import pandas as pd
@@ -12,16 +16,37 @@ from .notify.msg import email, text
 AVAILABILITY_CSV = Path(Path(__file__).parent.parent, 'data', 'csv',
                         'historical_availability.csv')
 
+class SysArgFilter(logging.Filter):
+    def __init__(self):
+        self.sysarg = '{{{}}}'.format(' '.join(sys.argv[1:]))
+
+    def filter(self, record):
+        record.sysarg = self.sysarg
+        return True
+
+
 def main():
+    # set up logging
+    log_dir = Path(Path(__file__).parent.parent, 'log')
+    logging_webdriver_path = Path(log_dir, 'geckodriver.log')
+    logging_config_path = Path(log_dir, 'config.ini')
+    logging.config.fileConfig(logging_config_path)
+    logging.getLogger().addFilter(SysArgFilter())
+    
+    # set up webdriver
     options = webdriver.FirefoxOptions()
     options.headless = True
-    driver = webdriver.Firefox(options=options)
-
+    driver = webdriver.Firefox(options=options,
+                               service_log_path=logging_webdriver_path)
+    logging.debug('Initialized webdriver.')
+        
     if args.find:
         scraper = AppointmentScraper(driver, 'California')
         entries = scraper.get_city_status_entries()
         
         if not AVAILABILITY_CSV.exists():
+            logging.debug("File '{}' not found. Creating file..." \
+                          .format(AVAILABILITY_CSV))
             AVAILABILITY_CSV.touch()
         try:
             df = pd.read_csv(AVAILABILITY_CSV)
@@ -29,7 +54,7 @@ def main():
             df = pd.DataFrame()
         finally:
             df = df.append(entries, ignore_index=True)
-
+        
         city_filter = (((df.city=='San Jose') | (df.city=='Santa Clara') |
                         (df.city=='Campbell') | (df.city=='Los Gatos'))
                        & (df.timestamp==scraper.timestamp))
@@ -42,9 +67,10 @@ def main():
                 msg = "Vaccines available in the following cities: " + cities
                 email(msg)
                 text(msg)
-        df.to_csv(AVAILABILITY_CSV, index=False)
-    elif args.schedule:
-        scheduler = AppointmentScheduler()
+            logging.debug('Appending latest vaccine availability to csv...')
+            df.to_csv(AVAILABILITY_CSV, index=False)
+        elif args.schedule:
+            scheduler = AppointmentScheduler()
     driver.quit()
     """
     with webdriver.Firefox(options=options) as driver:
