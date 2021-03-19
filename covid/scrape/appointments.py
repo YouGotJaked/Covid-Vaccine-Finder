@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from pathlib import Path
 from dateutil.parser import parse
 from dateutil.parser._parser import ParserError
@@ -98,17 +99,22 @@ class AppointmentScraper:
             logging.debug('Found timestamp: %s',
                           timestamp.get_attribute('data-id'))
             if not timestamp.is_displayed():
+                logging.debug('Timestamp was hidden.')
                 self.click_state_element()
-                timestamp = self.vaccine_info.find_element_by_css_selector(
-                    "div[data-id='timestamp']")
             return timestamp
         except TimeoutException as exc:
             logging.warning(exc)
             return None
    
     def formatted_timestamp(self):
+        timestamp = self.raw_timestamp()
+        time_slept = 0
+        while not timestamp.is_displayed() and time_slept <= TIMEOUT:
+            logging.debug('Timestamp still hidden.')
+            time.sleep(0.5)
+            time_slept += 0.5
         try:
-            return parse((' ').join(self.raw_timestamp().text.split()[3:6]),
+            return parse((' ').join(timestamp.text.split()[3:6]),
                          tzinfos=self.tz_info)
         except (ParserError, TypeError) as err:
             # raw timestamp was empty

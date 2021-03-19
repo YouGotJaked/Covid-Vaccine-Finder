@@ -35,7 +35,7 @@ def main():
     
     # set up webdriver
     options = webdriver.FirefoxOptions()
-    options.headless = True
+    #options.headless = True
     """
     driver = webdriver.Firefox(options=options,
                                service_log_path=logging_webdriver_path)
@@ -72,9 +72,10 @@ def main():
                     msg = "Vaccines available in the following cities: " + cities
                     email(msg)
                     text(msg)
+            if args.archive:
                 logging.debug('Appending latest vaccine availability to csv...')
                 df.to_csv(AVAILABILITY_CSV, index=False)
-            elif args.schedule:
+            if args.schedule:
                 scheduler = AppointmentScheduler()
                 """
                 driver.get(BASE_URL)
@@ -111,5 +112,10 @@ if __name__ == '__main__':
                         default=False,
                         help='Send an email or text upon finding an ' \
                         'available appointment')
+    parser.add_argument('-a',
+                        '--archive',
+                        action='store_true',
+                        default=False,
+                        help='Archive historical vaccine availability')
     args = parser.parse_args()
     main()
